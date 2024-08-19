@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Sign-Up</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background: url(Images/hs01.jpg) no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+
+        .form {
+            position: relative;
+            z-index: 1;
+            background: #FFFFFF;
+            opacity: 99%;
+            max-width: 400px;
+            margin: 200px auto 100px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+            border-radius: 10px;
+        }
+
+        .form p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .form input,
+        .form select {
+            outline: 0;
+            border-radius: 10px;
+            background: #F2F2F2;
+            width: 100%;
+            border: 0;
+            margin: 0 0 15px;
+            padding: 15px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .form input:hover,
+        .form select:hover {
+            background-color: #D3F8F9;
+            transition: background-color 0.3s ease;
+        }
+
+        .form input:focus,
+        .form select:focus {
+            background-color: #D3F8F9;
+            transition: background-color 0.3s ease;
+        }
+
+        .form button {
+            text-transform: uppercase;
+            outline: 0;
+            border-radius: 10px;
+            background: #1ADBE5;
+            width: 100%;
+            border: 0;
+            padding: 15px;
+            color: #FFFFFF;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .form button:hover,
+        .form button:active,
+        .form button:focus {
+            background-color: #06C5CF;
+            transition: background-color 0.3s ease;
+        }
+
+        #signUpButton {
+            background-color: #008CBA;
+        }
+
+        #signUpButton:hover {
+            background-color: #007BB5;
+        }
+
+        .form .message {
+            margin: 15px 0 0;
+            color: #B3B3B3;
+            font-size: 14px;
+        }
+
+        .form .message a {
+            color: #06C5CF;
+            text-decoration: none;
+        }
+
+        .form .checkbox-list {
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .form .checkbox-list .checkbox-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .form .checkbox-list .checkbox-item label {
+            flex-grow: 1;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form">
+        <p>Coach Sign-Up</p>
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="password" id="password" placeholder="Password" required />
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" required />
+        <input type="text" id="Name" placeholder="Name" required />
+        <input type="text" id="securityCode" placeholder="Security Code" required />
+        <div id="additionalFields"></div>
+        <div class="checkbox-list" id="ecaCheckboxList"></div>
+        <button id="signUpButton">Sign Up</button>
+        <div class="message">
+            <p>Already have an account? <a href="CoachLogin.html">Login</a></p>
+        </div>
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAgwQZwXyDCdC9n2qOYH1mWX22KujsG5Ys",
+            authDomain: "eca-program.firebaseapp.com",
+            projectId: "eca-program",
+            storageBucket: "eca-program.appspot.com",
+            messagingSenderId: "116171510985",
+            appId: "1:116171510985:web:12baf1351a622460b22918"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const loadAdditionalFields = async () => {
+            try {
+                const adminDoc = await getDoc(doc(db, "adminInfo", "doc"));
+                if (adminDoc.exists()) {
+                    const coachDetails = adminDoc.data().CoachDetails || [];
+                    const additionalFieldsDiv = document.getElementById('additionalFields');
+                    coachDetails.forEach(detail => {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.id = detail;
+                        input.placeholder = detail;
+                        input.required = true;
+                        additionalFieldsDiv.appendChild(input);
+                    });
+
+                    loadECAList();
+                } else {
+                    console.error('Admin document not found');
+                }
+            } catch (error) {
+                console.error('Error fetching additional fields: ', error);
+            }
+        };
+
+        const loadECAList = async () => {
+            try {
+                const ecaRef = collection(db, 'ecaInfo');
+                const ecaSnapshot = await getDocs(ecaRef);
+                const ecaCheckboxList = document.getElementById('ecaCheckboxList');
+
+                ecaSnapshot.forEach(doc => {
+                    const ecaName = doc.data().Name || doc.id;
+                    const checkboxItem = document.createElement('div');
+                    checkboxItem.classList.add('checkbox-item');
+
+                    const label = document.createElement('label');
+                    label.textContent = ecaName;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = ecaName;
+
+                    checkboxItem.appendChild(label);
+                    checkboxItem.appendChild(checkbox);
+                    ecaCheckboxList.appendChild(checkboxItem);
+                });
+            } catch (error) {
+                console.error('Error loading ECA list: ', error);
+            }
+        };
+
+        const signUpButton = document.getElementById('signUpButton');
+        signUpButton.addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const name = document.getElementById('Name').value;
+            const securityCode = document.getElementById('securityCode').value;
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match.');
+                return;
+            }
+
+            try {
+                const adminDoc = await getDoc(doc(db, "adminInfo", "doc"));
+                if (!adminDoc.exists() || adminDoc.data().SecurityCode !== securityCode) {
+                    alert('Invalid security code.');
+                    return;
+                }
+
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userId = userCredential.user.uid;
+
+                const coachDetails = {};
+                document.querySelectorAll('#additionalFields input').forEach(input => {
+                    coachDetails[input.id] = input.value.trim();
+                });
+
+                const selectedECAs = [];
+                document.querySelectorAll('#ecaCheckboxList input:checked').forEach(checkbox => {
+                    selectedECAs.push(checkbox.value);
+                });
+
+                await setDoc(doc(db, "coachInfo", userId), {
+                    Email: email,
+                    Name: name,
+                    ECAs: selectedECAs,
+                    ...coachDetails
+                });
+
+                alert('Sign-up successful!');
+                window.location.href = "CoachHome.html";
+            } catch (error) {
+                console.error('Error signing up: ', error);
+                alert('Error signing up. Please try again.');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadAdditionalFields);
+    </script>
+</body>
+
+</html>

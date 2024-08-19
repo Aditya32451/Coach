@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Home</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background: url(Images/hs01.jpg) no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+
+        .nav-bar {
+            background-color: #333;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-bar a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+
+        .nav-bar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .nav-bar img {
+            width: 50px;
+            height: 50px;
+            margin-right: 20px;
+            cursor: pointer;
+            background-color: #333;
+        }
+
+        .form {
+            position: relative;
+            z-index: 1;
+            background: #FFFFFF;
+            opacity: 99%;
+            max-width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+            border-radius: 10px;
+        }
+
+        .form p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .form select,
+        .form input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 10px;
+            background: #F2F2F2;
+            border: 0;
+        }
+
+        .form select:focus,
+        .form input[type="text"]:focus {
+            background-color: #D3F8F9;
+            transition: background-color 0.3s ease;
+        }
+
+        .form .input-group {
+            margin-bottom: 20px;
+        }
+
+        .form .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+        }
+
+        .form .checkbox-group .checkbox-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .form .checkbox-group .checkbox-item:last-child {
+            border-bottom: none;
+        }
+
+        .form .checkbox-group label {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .form button {
+            text-transform: uppercase;
+            outline: 0;
+            border-radius: 10px;
+            background: #1ADBE5;
+            width: 100%;
+            border: 0;
+            padding: 15px;
+            color: #FFFFFF;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .form button:hover,
+        .form button:active,
+        .form button:focus {
+            background-color: #06C5CF;
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav-bar">
+        <img src="images/profile_icon.jpg" alt="Profile Icon" id="profileIcon" onclick="window.location.href='CoachChangeInfo.html'">
+        <a href="CoachManageAttendanceAndComments.html">Manage Attendance & Comments</a>
+        <a href="CoachViewPastAttendanceAndComments.html">View Attendance & Comments</a>
+    </div>
+    <div class="form">
+        <p>Edit ECA Details</p>
+        <select id="ecaSelect">
+            <option value="" disabled selected>Select ECA</option>
+        </select>
+        <div id="ecaDetails"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAgwQZwXyDCdC9n2qOYH1mWX22KujsG5Ys",
+            authDomain: "eca-program.firebaseapp.com",
+            projectId: "eca-program",
+            storageBucket: "eca-program.appspot.com",
+            messagingSenderId: "116171510985",
+            appId: "1:116171510985:web:12baf1351a622460b22918"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const loadECAs = async () => {
+            try {
+                const user = auth.currentUser;
+                if (user) {
+                    const coachDocRef = doc(db, "coachInfo", user.uid);
+                    const coachDocSnap = await getDoc(coachDocRef);
+                    if (coachDocSnap.exists()) {
+                        const coachData = coachDocSnap.data();
+                        const ecaList = coachData.ECAs || [];
+                        const ecaSelect = document.getElementById('ecaSelect');
+                        ecaList.forEach(eca => {
+                            const option = document.createElement('option');
+                            option.value = eca;
+                            option.textContent = eca;
+                            ecaSelect.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading ECAs: ", error);
+            }
+        };
+
+        const loadECADetails = async (ecaName) => {
+            try {
+                const ecaDocRef = doc(db, "ecaInfo", ecaName);
+                const ecaDocSnap = await getDoc(ecaDocRef);
+                const ecaDetailsDiv = document.getElementById('ecaDetails');
+                ecaDetailsDiv.innerHTML = '';
+
+                if (ecaDocSnap.exists()) {
+                    const ecaData = ecaDocSnap.data();
+
+                    const adminDocRef = doc(db, "adminInfo", "doc");
+                    const adminDocSnap = await getDoc(adminDocRef);
+
+                    if (adminDocSnap.exists()) {
+                        const ecaInformationNeeded = adminDocSnap.data().ECAInformationNeeded || [];
+
+                        ecaInformationNeeded.forEach(field => {
+                            if (field !== "Students") {
+                                const inputGroup = document.createElement('div');
+                                inputGroup.className = 'input-group';
+
+                                const label = document.createElement('label');
+                                label.textContent = field;
+
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.id = field;
+                                input.value = ecaData[field] || '';
+
+                                inputGroup.appendChild(label);
+                                inputGroup.appendChild(input);
+                                ecaDetailsDiv.appendChild(inputGroup);
+                            }
+                        });
+
+                        // Add checkbox list for Classes
+                        const classInputGroup = document.createElement('div');
+                        classInputGroup.className = 'input-group';
+
+                        const classLabel = document.createElement('label');
+                        classLabel.textContent = 'Class';
+
+                        const classCheckboxGroup = document.createElement('div');
+                        classCheckboxGroup.className = 'checkbox-group';
+
+                        // Populate the checkbox list with class options (1 to 12)
+                        for (let i = 1; i <= 12; i++) {
+                            const checkboxItem = document.createElement('div');
+                            checkboxItem.className = 'checkbox-item';
+
+                            const checkboxLabel = document.createElement('label');
+                            checkboxLabel.textContent = `Class ${i}`;
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.value = i;
+                            checkbox.checked = ecaData.Class && ecaData.Class.includes(i);
+
+                            checkboxItem.appendChild(checkboxLabel);
+                            checkboxItem.appendChild(checkbox);
+                            classCheckboxGroup.appendChild(checkboxItem);
+                        }
+
+                        classInputGroup.appendChild(classLabel);
+                        classInputGroup.appendChild(classCheckboxGroup);
+                        ecaDetailsDiv.appendChild(classInputGroup);
+
+                        const saveButton = document.createElement('button');
+                        saveButton.textContent = 'Save Changes';
+                        saveButton.addEventListener('click', async () => {
+                            const updatedECAData = {};
+                            ecaInformationNeeded.forEach(field => {
+                                if (field !== "Students") {
+                                    updatedECAData[field] = document.getElementById(field).value;
+                                }
+                            });
+
+                            // Get selected classes
+                            const selectedClasses = Array.from(classCheckboxGroup.querySelectorAll('input:checked')).map(checkbox => parseInt(checkbox.value));
+                            updatedECAData.Class = selectedClasses;
+
+                            await updateDoc(ecaDocRef, updatedECAData);
+                            alert('ECA details updated successfully.');
+                        });
+
+                        ecaDetailsDiv.appendChild(saveButton);
+                    }
+                } else {
+                    ecaDetailsDiv.innerHTML = 'No details available for this ECA.';
+                }
+            } catch (error) {
+                console.error("Error loading ECA details: ", error);
+            }
+        };
+
+        document.getElementById('ecaSelect').addEventListener('change', (event) => {
+            const selectedECA = event.target.value;
+            if (selectedECA) {
+                loadECADetails(selectedECA);
+            } else {
+                document.getElementById('ecaDetails').innerHTML = '';
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loadECAs();
+            } else {
+                window.location.href = "CoachLogin.html";
+            }
+        });
+    </script>
+</body>
+
+</html>

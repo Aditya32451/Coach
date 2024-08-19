@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Coach Information</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background: url(Images/hs01.jpg) no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+
+        .nav-bar {
+            background-color: #333;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-bar a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+
+        .nav-bar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .form {
+            position: relative;
+            z-index: 1;
+            background: #FFFFFF;
+            opacity: 99%;
+            max-width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+            border-radius: 10px;
+        }
+
+        .form p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .form input {
+            outline: 0;
+            border-radius: 10px;
+            background: #F2F2F2;
+            width: 100%;
+            border: 0;
+            margin: 0 0 15px;
+            padding: 15px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .form input:hover {
+            background-color: #D3F8F9;
+            transition: background-color 0.3s ease;
+        }
+
+        .form input:focus {
+            background-color: #D3F8F9;
+            transition: background-color 0.3s ease;
+        }
+
+        .form button {
+            text-transform: uppercase;
+            outline: 0;
+            border-radius: 10px;
+            background: #1ADBE5;
+            width: 100%;
+            border: 0;
+            padding: 15px;
+            color: #FFFFFF;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .form button:hover,
+        .form button:active,
+        .form button:focus {
+            background-color: #06C5CF;
+            transition: background-color 0.3s ease;
+        }
+
+        .form .section {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav-bar">
+        <a href="CoachHome.html">Home</a>
+        <a href="CoachManageAttendanceAndComments.html">Manage Attendance & Comments</a>
+    </div>
+    <div class="form">
+        <p>Change Information</p>
+
+        <div class="section">
+            <h3>Change Personal Information</h3>
+            <input type="text" id="name" placeholder="Name" required />
+            <button id="updateInfoButton">Update Info</button>
+        </div>
+
+        <div class="section">
+            <h3>Change Email</h3>
+            <input type="email" id="newEmail" placeholder="New Email" required />
+            <input type="password" id="emailPassword" placeholder="Password" required />
+            <button id="updateEmailButton">Update Email</button>
+        </div>
+
+        <div class="section">
+            <h3>Change Password</h3>
+            <input type="password" id="newPassword" placeholder="New Password" required />
+            <input type="password" id="confirmPassword" placeholder="Confirm New Password" required />
+            <button id="updatePasswordButton">Update Password</button>
+        </div>
+
+        <button id="signOutButton">Sign Out</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getAuth, updateEmail, updatePassword, signOut, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+        import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAgwQZwXyDCdC9n2qOYH1mWX22KujsG5Ys",
+            authDomain: "eca-program.firebaseapp.com",
+            projectId: "eca-program",
+            storageBucket: "eca-program.appspot.com",
+            messagingSenderId: "116171510985",
+            appId: "1:116171510985:web:12baf1351a622460b22918"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        document.getElementById('updateInfoButton').addEventListener('click', async () => {
+            const name = document.getElementById('name').value;
+            if (!name) return alert('Please enter a valid name');
+
+            try {
+                const user = auth.currentUser;
+                const coachDocRef = doc(db, 'coachInfo', user.uid);
+                await updateDoc(coachDocRef, { Name: name });
+                alert('Information updated successfully');
+            } catch (error) {
+                console.error('Error updating information:', error);
+                alert('Error updating information');
+            }
+        });
+
+        document.getElementById('updateEmailButton').addEventListener('click', async () => {
+            const newEmail = document.getElementById('newEmail').value;
+            const emailPassword = document.getElementById('emailPassword').value;
+
+            if (!newEmail || !emailPassword) return alert('Please fill out all fields');
+
+            try {
+                const user = auth.currentUser;
+                const credential = EmailAuthProvider.credential(user.email, emailPassword);
+                await reauthenticateWithCredential(user, credential);
+
+                await updateEmail(user, newEmail);
+                const coachDocRef = doc(db, 'coachInfo', user.uid);
+                await updateDoc(coachDocRef, { Email: newEmail });
+
+                alert('Email updated successfully');
+            } catch (error) {
+                console.error('Error updating email:', error);
+                alert('Error updating email');
+            }
+        });
+
+        document.getElementById('updatePasswordButton').addEventListener('click', async () => {
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) return alert('Passwords do not match');
+
+            try {
+                const user = auth.currentUser;
+                await updatePassword(user, newPassword);
+                alert('Password updated successfully');
+            } catch (error) {
+                console.error('Error updating password:', error);
+                alert('Error updating password');
+            }
+        });
+
+        document.getElementById('signOutButton').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                window.location.href = "CoachLogin.html";
+            } catch (error) {
+                console.error('Error signing out:', error);
+                alert('Error signing out');
+            }
+        });
+    </script>
+</body>
+
+</html>
