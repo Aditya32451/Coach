@@ -266,7 +266,7 @@
                     const studentDetailsPromises = studentIds.map(async (studentId) => {
                         const studentDocRef = doc(db, "studentInfo", studentId);
                         const studentDocSnap = await getDoc(studentDocRef);
-                        return studentDocSnap.exists() ? { ...studentDocSnap.data(), id: studentId } : {};
+                        return studentDocSnap.exists() ? { ...studentDocSnap.data(), Id: studentId } : {};
                     });
 
                     const students = await Promise.all(studentDetailsPromises);
